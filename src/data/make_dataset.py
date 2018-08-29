@@ -2,19 +2,64 @@
 import click
 import logging
 from pathlib import Path
-from dotenv import find_dotenv, load_dotenv
+import pandas as pd
+from os import walk
+import numpy as np
+#from dotenv import find_dotenv, load_dotenv
 
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
+def main(input_filepath = None, output_filepath = None):
+    """ Runs data processing scripts to turn raw data from (../../data/raw) into
+        cleaned data ready to be analyzed (saved in ../../data/processed).
+        usage example: python make_dataset.py ../../data/raw ../../data/processed
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
+    Nov = loadRaw(input_filepath+'/milan/sms-call-internet-mi/sms-call-internet-mi-Nov')
+    aggregateGridData(Nov,output_filepath+'/gridTraffic')
 
+def loadRaw(filepath = None):
+    sheetList = []
+    names = ['squareId', 'timeInterval', 'countryCode', 'smsIn', 'smsOut', 'callIn', 'callOut', 'Internet']
+    dir_ = filepath
+    for _, _, file in walk(dir_):
+        for f in file:
+            data = pd.read_table(dir_ + '/' + f, names=names)
+            sheetList.append(data)
+        print('Reading Finished. There are ' + str(len(sheetList)) + ' files in all.')
+    return sheetList
+
+def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
+    # used to aggregate the data of each grid
+    # the output file named 'grid#.csv', no headers and no index by default
+    # csv format timeInterval,callin,callout,smsin,smsout,internet
+    logger = logging.getLogger(__name__)
+    gridNum = 9999
+    for i in range(1, gridNum+1):
+        gridData = pd.DataFrame()
+        for sheet in sheetList:
+            tmp = sheet[sheet['squareId'] == i]
+            gridData = pd.concat([gridData, tmp], axis=0).reset_index(drop=True)
+
+        #aggregate data
+        gd = gridData.groupby(['timeInterval']).sum()
+        gd = gd.drop(['countryCode','squareId'],axis = 1)#.reset_index(drop = True)
+
+        #deal with missing data
+        gd = gd.fillna(0)
+        #check if there's missing time interval
+        tt = gd.index
+        for i, time in enumerate(tt):
+            if i == len(tt) - 1:
+                break
+            if not tt[i + 1] == time + 600000:
+                logging.warning('warning: missing time interval ', str(time + 600000))
+
+        gd.to_csv(output_filepath +'/grid'+str(i)+'.csv',header = header)
+        logging.info('grid'+str(i)+' aggregated\n')
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -25,6 +70,6 @@ if __name__ == '__main__':
 
     # find .env automagically by walking up directories until it's found, then
     # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
+    #load_dotenv(find_dotenv())
 
     main()
