@@ -52,11 +52,11 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
         gd = gd.fillna(0)
         #check if there's missing time interval
         tt = gd.index
-        for i, time in enumerate(tt):
-            if i == len(tt) - 1:
+        for id, time in enumerate(tt):
+            if id == len(tt) - 1:
                 break
-            if not tt[i + 1] == time + 600000:
-                logging.warning('warning: missing time interval ', str(time + 600000))
+            if not tt[id + 1] == time + 600000:
+                logging.warning('warning: missing time interval '+str(time + 600000))
 
         gd.to_csv(output_filepath +'/grid'+str(i)+'.csv',header = header)
         logging.info('grid'+str(i)+' aggregated\n')
