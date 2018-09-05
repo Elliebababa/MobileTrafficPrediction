@@ -50,16 +50,23 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
 
         #deal with missing data
         gd = gd.fillna(0)
-        #check if there's missing time interval
-        tt = gd.index
-        for id, time in enumerate(tt):
-            if id == len(tt) - 1:
-                break
-            if not tt[id + 1] == time + 600000:
-                logging.warning('warning: missing time interval '+str(time + 600000))
 
+
+        '''not all the time are recorded in the dataset, so we need to check and insert those missing interval'''
+
+        #check and insert missing timeInterval
+        tt = gd.index
+        for id, time in enumerate(tt[:-1]):
+            if not tt[id + 1] == time + 600000:
+                for missingInterval in range(time + 600000, tt[id + 1],600000):
+                    logging.warning('warning: missing time interval '+str(missingInterval)+'... and now inserting...')
+                    gd.loc[missingInterval] = [0,0,0,0,0]
+
+        gd = gd.sort_index()
+        #write csv to file
         gd.to_csv(output_filepath +'/grid'+str(i)+'.csv',header = header)
         logging.info('grid'+str(i)+' aggregated\n')
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
