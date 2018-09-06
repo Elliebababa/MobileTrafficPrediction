@@ -37,7 +37,7 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
     # the output file named 'grid#.csv', no headers and no index by default
     # csv format timeInterval,callin,callout,smsin,smsout,internet
     logger = logging.getLogger(__name__)
-    gridNum = 9999
+    gridNum = 10000
     for i in range(1, gridNum+1):
         gridData = pd.DataFrame()
         for sheet in sheetList:
