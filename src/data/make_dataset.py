@@ -17,7 +17,7 @@ def main(input_filepath = None, output_filepath = None):
         usage example: python make_dataset.py ../../data/raw ../../data/processed
     """
     logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    logger.info('making data set from raw data')
     Nov = loadRaw(input_filepath+'/milan/sms-call-internet-mi/sms-call-internet-mi-Nov')
     aggregateGridData(Nov,output_filepath+'/gridTraffic')
 
@@ -37,7 +37,7 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
     # the output file named 'grid#.csv', no headers and no index by default
     # csv format timeInterval,callin,callout,smsin,smsout,internet
     logger = logging.getLogger(__name__)
-    gridNum = 9999
+    gridNum = 10000
     for i in range(1, gridNum+1):
         gridData = pd.DataFrame()
         for sheet in sheetList:
@@ -55,7 +55,8 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
         '''not all the time are recorded in the dataset, so we need to check and insert those missing interval'''
 
         #check and insert missing timeInterval
-        tt = gd.index
+        #suppose that all the interval are recorded between 1383260400000,1385851800000, i.e. from 11.01 07:00 - 12.01 6:60 (30 days,720 hours)
+        tt = list(range(1383260400000,1385852400000,600000))#gd.index
         for id, time in enumerate(tt[:-1]):
             if not tt[id + 1] == time + 600000:
                 for missingInterval in range(time + 600000, tt[id + 1],600000):
