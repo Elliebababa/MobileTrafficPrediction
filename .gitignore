@@ -81,5 +81,9 @@ target/
 # Mac OS-specific storage files
 .DS_Store
 
+<<<<<<< HEAD
 #report
 /reports/
+=======
+/reports/
+>>>>>>> 789c8b008b622816a54d74784bd0b3113b4491da
