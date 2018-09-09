@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import scipy.sparse
 from scipy.sparse import csr_matrix
+from scipy.sparse import dok_matrix
 import click
 import logging
 from pathlib import Path
@@ -19,9 +20,22 @@ def main(input_filepath = None, output_filepath = None):
 
     names = ['time','from','to','strength']
     dir_ = input_filepath
-    
+
     for _,_, file in walk(dir_):
-        for f in file:
+        for fp in file:
+            S = dok_matrix((10001,10001),dtype = np.float32)
+            with open(dir_+'/'+fp,'r') as f:
+                for line_terminated in f:
+                    line = line_terminated.rstrip('\n').split()
+                    from_,to_,data = int(line[1]),int(line[2]),float(line[3])
+                    if (from_,to_) in S:
+                        S[from_,to_] += data
+                    else:
+                        S[from_,to_] = data
+            Scsr = S.tocsr()
+            scipy.sparse.save_npz(output_filepath+'/'+fp.replace("txt", "npz"),S.tocsr())
+            logging.info(fp+' processing done..')
+            '''
             data = pd.read_table(dir_+'/'+f, names = names)
             print(f)
             row = np.array([])
@@ -34,13 +48,13 @@ def main(input_filepath = None, output_filepath = None):
             cm = csr_matrix((stre,(row,col)),shape = (10001,10001))
             scipy.sparse.save_npz(output_filepath+'/'+f.replace("txt", "npz"),cm)
             logging.info(f+' processing done..')
-            """
+            
             datagroup = data.groupby(['from','to']).sum()
             datagroup = datagroup.drop(['time'],axis = 1)
             datagrid = datagroup.unstack().fillna(0)
             datagrid.to_csv(output_filepath+'/'+f.replace("txt", "csv"),header = None, index = None)
             logging.info(f+' processing done..')
-            """
+            '''
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
