@@ -1,0 +1,69 @@
+2018-09-10 09:15:29,569 - __main__ - INFO - transforming the raw mi-mi data to grid data..
+Traceback (most recent call last):
+  File "mi-mi-to-grid-sparse.py", line 63, in <module>
+    main()
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 722, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "mi-mi-to-grid-sparse.py", line 30, in main
+    from_,to_,data = int(line[1]),int(line[2]),float(line[3])
+IndexError: list index out of range
+2018-09-10 09:57:36,923 - __main__ - INFO - transforming the raw mi-mi data to grid data..
+2018-09-10 09:57:36,923 - root - INFO - MItoMI-2013-11-13.txtbeing processed.. 
+Traceback (most recent call last):
+  File "mi-mi-to-grid-sparse.py", line 64, in <module>
+    main()
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 722, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "mi-mi-to-grid-sparse.py", line 31, in main
+    from_,to_,data = int(line[1]),int(line[2]),float(line[3])
+IndexError: list index out of range
+2018-09-10 10:32:24,308 - __main__ - INFO - transforming the raw mi-mi data to grid data..
+2018-09-10 10:32:24,308 - root - INFO - MItoMI-2013-11-23.txtbeing processed.. 
+2018-09-10 11:10:38,448 - __main__ - INFO - transforming the raw mi-mi data to grid data..
+2018-09-10 11:10:38,448 - root - INFO - MItoMI-2013-11-17.txtbeing processed.. 
+2018-09-10 11:12:50,452 - root - INFO - MItoMI-2013-11-23.txt processing done..
+2018-09-10 11:12:50,452 - root - INFO - MItoMI-2013-11-17.txtbeing processed.. 
+2018-09-10 11:44:37,703 - root - INFO - MItoMI-2013-11-17.txt processing done..
+2018-09-10 11:44:37,703 - root - INFO - MItoMI-2013-11-06.txtbeing processed.. 
+2018-09-10 11:46:29,312 - root - INFO - MItoMI-2013-11-17.txt processing done..
+2018-09-10 11:46:29,313 - root - INFO - MItoMI-2013-11-06.txtbeing processed.. 
+2018-09-10 12:46:00,821 - root - INFO - MItoMI-2013-11-06.txt processing done..
+2018-09-10 12:46:00,821 - root - INFO - MItoMI-2013-11-26.txtbeing processed.. 
+2018-09-10 12:57:26,363 - root - INFO - MItoMI-2013-11-06.txt processing done..
+2018-09-10 12:57:26,364 - root - INFO - MItoMI-2013-11-26.txtbeing processed.. 
+2018-09-10 13:40:07,954 - root - INFO - MItoMI-2013-11-26.txt processing done..
+2018-09-10 13:40:07,954 - root - INFO - MItoMI-2013-11-18.txtbeing processed.. 
+2018-09-10 14:01:15,410 - root - INFO - MItoMI-2013-11-26.txt processing done..
+2018-09-10 14:01:15,410 - root - INFO - MItoMI-2013-11-18.txtbeing processed.. 
+2018-09-10 15:04:58,888 - root - INFO - MItoMI-2013-11-18.txt processing done..
+2018-09-10 15:04:58,888 - root - INFO - MItoMI-2013-11-11.txtbeing processed.. 
+2018-09-10 16:04:19,656 - root - INFO - MItoMI-2013-11-11.txt processing done..
+2018-09-10 16:04:19,657 - root - INFO - MItoMI-2013-11-20.txtbeing processed.. 
+2018-09-10 16:59:06,121 - root - INFO - MItoMI-2013-11-20.txt processing done..
+2018-09-10 16:59:06,121 - root - INFO - MItoMI-2013-11-09.txtbeing processed.. 
+Traceback (most recent call last):
+  File "mi-mi-to-grid-sparse.py", line 64, in <module>
+    main()
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 722, in __call__
+    return self.main(*args, **kwargs)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 697, in main
+    rv = self.invoke(ctx)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 895, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+  File "/home/desktop/anaconda3/lib/python3.6/site-packages/click/core.py", line 535, in invoke
+    return callback(*args, **kwargs)
+  File "mi-mi-to-grid-sparse.py", line 31, in main
+    from_,to_,data = int(line[1]),int(line[2]),float(line[3])
+IndexError: list index out of range

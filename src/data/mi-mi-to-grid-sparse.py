@@ -23,6 +23,7 @@ def main(input_filepath = None, output_filepath = None):
 
     for _,_, file in walk(dir_):
         for fp in file:
+            logging.info(fp+'being processed.. ')
             S = dok_matrix((10001,10001),dtype = np.float32)
             with open(dir_+'/'+fp,'r') as f:
                 for line_terminated in f:
