@@ -15,8 +15,13 @@ from os import walk
 @click.argument('output_filepath',type = click.Path())
 
 def main(input_filepath = None, output_filepath = None):
+    #caltheInteractionPerday()
+    
+    caltheInteractionPer10min(input_filepath, output_filepath)
+
+def caltheInteractionPerday(input_filepath = None, output_filepath = None):
     logger = logging.getLogger(__name__)
-    logger.info('transforming the raw mi-mi data to grid data..')
+    logger.info('transforming the raw mi-mi data to grid data..then we will get the call interactions among grids per day...')
 
     names = ['time','from','to','strength']
     dir_ = input_filepath
@@ -55,6 +60,33 @@ def main(input_filepath = None, output_filepath = None):
             datagrid.to_csv(output_filepath+'/'+f.replace("txt", "csv"),header = None, index = None)
             logging.info(f+' processing done..')
             '''
+def caltheInteractionPer10min(input_filepath = None, output_filepath = None):
+    logger = logging.getLogger(__name__)
+    logger.info('transforming the raw mi-mi data to grid data..then we will get the call interactions among grids per 10 min.')
+
+    #names = ['time','from','to','strength']
+    dir_ = input_filepath
+
+    for _,_, file in walk(dir_):
+        for fp in file:
+            with open(dir_+'/'+fp,'r') as f:
+                timeIntervalsheets = {}
+                for line_terminated in f:
+                    line = line_terminated.rstrip('\n').split()
+                    t, from_,to_,data = int(line[0]), int(line[1]),int(line[2]),float(line[3])
+                    if t in timeIntervalsheets:
+                        if (from_, to_) in timeIntervalsheets[t]:
+                            timeIntervalsheets[t][from_,to_] +=data
+                        else:
+                            timeIntervalsheets[t][from_,to_] = data
+                    else:
+                        timeIntervalsheets[t] = dok_matrix((10001,10001),dtype = np.float32)
+                for t in timeIntervalsheets:
+                    S = timeIntervalsheets[t].tocsr()
+                    scipy.sparse.save_npz('{}/{}.npz'.format(output_filepath,t),S)
+                    logging.info('Interval'+ str(t)+' processing done..')
+
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
