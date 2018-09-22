@@ -71,6 +71,7 @@ def caltheInteractionPer10min(input_filepath = None, output_filepath = None):
     for _,_, file in walk(dir_):
         for fp in file:
             with open(dir_+'/'+fp,'r') as f:
+                logging.info('=============file:{} is being processed..================'.format(fp))
                 timeIntervalsheets = {}
                 for line_terminated in f:
                     line = line_terminated.rstrip('\n').split()
@@ -86,6 +87,8 @@ def caltheInteractionPer10min(input_filepath = None, output_filepath = None):
                     S = timeIntervalsheets[t].tocsr()
                     scipy.sparse.save_npz('{}/{}.npz'.format(output_filepath,t),S)
                     logging.info('Interval'+ str(t)+' processing done..')
+                logging.info('===============file:{}  processing done..================='.format(fp))
+
 
 
 
