@@ -21,7 +21,7 @@ def main(input_filepath = None, output_filepath = None):
     Nov = loadRaw(input_filepath+'/milan/sms-call-internet-mi/sms-call-internet-mi-Nov')
     aggregateGridData(Nov,output_filepath+'/gridTraffic')
 
-def loadRaw(filepath = None):
+def loadRaw(filepath = None,names = []):
     sheetList = []
     names = ['squareId', 'timeInterval', 'countryCode', 'smsIn', 'smsOut', 'callIn', 'callOut', 'Internet']
     dir_ = filepath

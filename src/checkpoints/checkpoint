@@ -1,0 +1,2 @@
+model_checkpoint_path: "D:\\MobileTrafficPrediction\\src\\models\\..\\checkpoints\\model-5"
+all_model_checkpoint_paths: "D:\\MobileTrafficPrediction\\src\\models\\..\\checkpoints\\model-5"
