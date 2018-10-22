@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pandas import read_csv
 import os
 import math
+import time
 
 import tensorflow as tf
 from tensorflow import keras
@@ -21,7 +22,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 def parse_args():
     parser = ArgumentParser(formatter_class = ArgumentDefaultsHelpFormatter, conflict_handler = 'resolve')
     parser.add_argument('--grid', required = True, help = 'grid number for training', type= int) 
-
+    parser.add_argument('--epoch', required = True, help = 'training epoch', type = int)
     args = parser.parse_args()
     return args
 
@@ -33,6 +34,9 @@ def create_dataset(dataset, look_back=1):
 		dataY.append(dataset[i + look_back])
 	return dataX, dataY
 
+def timeToStamp(string):
+    t = time.strptime(string,"%Y-%m-%d %H:%M:%S")
+    return int(time.mktime(t)*1000)
 
 walking_embedding_path = '../../data/processed/walking_embedding'
 def fetch_spatio_Embedding(time, grid,dim = 10):
@@ -64,10 +68,18 @@ def main(args):
 
 
     look_back = 6
-    for i in range(1, args.grid):
+    for i in range(1,args.grid):
         #df1 = pd.read_csv('E:/Italy/gridTraffic30/grid' + str(i) + '.csv')
-        df1 = pd.read_csv('../../data/processed/gridTraffic/gridTraffic/grid'+str(i)+'.csv')
+        df1 = pd.read_csv('../../data/processed/gridTraffic30/gridTraffic30/grid'+str(i)+'.csv')
         df1 = df1.rename(columns={0: 'time', 1: 'sms_in', 2: 'sms_out', 3: 'call_in', 4: 'call_out', 5: "traffic"})
+        
+        df_embedding = pd.read_csv('../../data/processed/grid_embedding/'+str(i)+'.csv', header = None, index_col = 0)
+        mean = df_embedding.mean(axis = 0)
+
+        for ind in df_embedding.T:
+            if (df_embedding.loc[ind] == 0).all():
+                df_embedding.loc[ind] = mean
+
         data = df1.iloc[:, -1].values
         timeInterval = df1.iloc[:,0].values
 
@@ -93,7 +105,16 @@ def main(args):
             train_callin.append(select3)
             train_callout.append(select4)
             #print('t_train[{}]:{}'.format(k,t_train[k]))
-            select5 = fetch_spatio_Embedding(t_train[k], i)
+            #select5 = fetch_spatio_Embedding(t_train[k], i)
+            select5 = df_embedding.loc[timeToStamp(t_train[k])]
+            if(select5 == float(0)).all():
+                idx = k
+                select5 += 0
+                #print(select5)
+                #while (select5 == float(0)).all():
+                #    idx = idx -1
+                #    select5 = df_embedding.loc[timeToStamp(t_train[k])]
+
             train_walking.append(select5)
 
         tmpX1, tmpY1 = create_dataset(dataTest, look_back)
@@ -105,14 +126,22 @@ def main(args):
             test_clus.append(select2)
             test_callin.append(select3)
             test_callout.append(select4)
-            select5 = fetch_spatio_Embedding(t_test[k], i)
-            test_walking.append(select5)
-        print('finish making dataset of grid{}'.format(i))
+            #select5 = fetch_spatio_Embedding(t_test[k], i)
+            select5_ = df_embedding.loc[timeToStamp(t_test[k])]
+            if (select5_ == float(0)).all():
+                idx = k
+                select5 += 0
+                #while (select5 == float(0)).all():
+                #    idx = idx - 1
+                #    select5 = df_embedding.loc[timeToStamp(t_test[idx])]
+            test_walking.append(select5_)
+        if i%10 ==1:
+            print('finish making dataset of grid{}'.format(i))
 
-    print(numpy.array(trainX).shape)
-    print(numpy.array(testX).shape)
-    print(numpy.array(trainY).shape)
-    print(numpy.array(testY).shape)
+    print(numpy.array(trainX).all())
+    print(numpy.array(testX).all())
+    print(numpy.array(trainY).all())
+    print(numpy.array(testY).all())
 
     # normalize the dataset
     scaler = MinMaxScaler(feature_range=(0, 1))
@@ -141,6 +170,10 @@ def main(args):
 
     print(trainX.shape)
     print(testX.shape)
+    trainX = np.nan_to_num(trainX)
+    testX = np.nan_to_num(testX)
+    train_walking = np.nan_to_num(train_walking)
+    test_walking = np.nan_to_num(test_walking)
     print('finish loading')
 
     # create and fit the LSTM network
@@ -164,17 +197,20 @@ def main(args):
     x = keras.layers.concatenate([x, in4])
     x = keras.layers.concatenate([x, in5])
     x = keras.layers.concatenate([x, in6])
-    x = keras.layers.concatenate([x, in7])
+    x = keras.layers.concatenate([lstm_out, in7])
 #x = Dense(6, activation='relu', name = 'dense1')(lstm_out)
 #y = Dense(1, activation='sigmoid', name = 'dense2')(lstm_out)
     y = Dense(1, activation='sigmoid', name = 'dense2')(x)
     model = Model(inputs=[in1,in2,in3,in4,in5,in6,in7], outputs=y)
+    #model = Model(inputs=[in1,in7],outputs = y)
     model.compile(optimizer='adam', loss='mean_squared_error')
-    model.fit([trainX,train_smsin,train_smsout,train_clus,train_callin,train_callout,train_walking], trainY, epochs=100, batch_size=100, verbose=2)
-
+    model.fit([trainX,train_smsin,train_smsout,train_clus,train_callin,train_callout,train_walking], trainY, epochs=args.epoch, batch_size=100, verbose=2)
+    #model.fit([trainX,train_walking], trainY, epochs = args.epoch, batch_size = 100, verbose = 2)
 
     trainPredict = model.predict([trainX, train_smsin, train_smsout, train_clus, train_callin,train_callout,train_walking])
     testPredict = model.predict([testX, test_smsin, test_smsout, test_clus, test_callin, test_callout,test_walking])
+    #trainPredict = model.predict([trainX,train_walking])
+    #testPredict = model.predict([testX, test_walking])
 
 # invert predictions
     trainPredict = scaler1.inverse_transform(trainPredict)
@@ -226,3 +262,11 @@ plt.show()
 #sms+call+cluster
 #Train Score: 10.56 RMSE
 #Test Score: 10.51 RMSE
+
+#embedding 0
+#Train Score: 10.75 RMSE
+#Test Score: 10.82 RMSE
+
+#embedding mean
+#Train Score: 10.74 RMSE
+#Test Score: 10.81 RMSE
