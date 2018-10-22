@@ -21,7 +21,7 @@ for _, _, file_ in walk(dir_):
         fp_ = '{}/{}'.format(dir_,f)
         t = f[:-4]
         d = pd.read_table(fp_, sep = ' ', skiprows = 1, header = None, index_col = 0)
-        for grid_idx in range(1,10001):
+        for grid_idx in range(5001,10001):
             if not grid_idx in grid:
                 grid[grid_idx] = pd.DataFrame()
             if grid_idx in d.index:
