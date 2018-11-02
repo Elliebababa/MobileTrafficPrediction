@@ -1,6 +1,7 @@
 import numpy
 import pandas as pd
 <<<<<<< HEAD
+<<<<<<< HEAD
 import matplotlib.pyplot as plt
 from pandas import read_csv
 import math
@@ -10,6 +11,8 @@ from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Input
 =======
+=======
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas import read_csv
@@ -23,13 +26,19 @@ from tensorflow.python.keras.models import Sequential, Model
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.layers import LSTM
 from tensorflow.python.keras.layers import Input
+<<<<<<< HEAD
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
+=======
 >>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import OneHotEncoder
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 def parse_args():
@@ -38,6 +47,9 @@ def parse_args():
     parser.add_argument('--epoch', required = True, help = 'training epoch', type = int)
     args = parser.parse_args()
     return args
+<<<<<<< HEAD
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
+=======
 >>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 
 def create_dataset(dataset, look_back=1):
@@ -48,6 +60,7 @@ def create_dataset(dataset, look_back=1):
 		dataY.append(dataset[i + look_back])
 	return dataX, dataY
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 dfin = pd.read_csv('D:/MobileTrafficPrediction/data/processed/smsin_embedding.csv')
@@ -174,6 +187,8 @@ print('Test Score: %.2f RMSE' % (testScore))
 
 
 =======
+=======
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 def timeToStamp(string):
     t = time.strptime(string,"%Y-%m-%d %H:%M:%S")
     return int(time.mktime(t)*1000)
@@ -365,6 +380,9 @@ def main(args):
 
 if __name__ == "__main__":
     main(parse_args())
+<<<<<<< HEAD
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
+=======
 >>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 
 
@@ -403,8 +421,11 @@ plt.show()
 #sms+call+cluster
 #Train Score: 10.56 RMSE
 <<<<<<< HEAD
+<<<<<<< HEAD
 #Test Score: 10.51 RMSE
 =======
+=======
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
 #Test Score: 10.51 RMSE
 
 #embedding 0
@@ -414,4 +435,7 @@ plt.show()
 #embedding mean
 #Train Score: 10.74 RMSE
 #Test Score: 10.81 RMSE
+<<<<<<< HEAD
+>>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
+=======
 >>>>>>> b63e946a20da780afda421f7bb6b8dcb29d142e9
