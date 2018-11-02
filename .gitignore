@@ -1,23 +1,23 @@
 #dataset
-data/
+/data/
 
 #notebooks
-notebooks/
+/notebooks/
 
 # IPython checkpoints
 .ipynb_checkpoints/
 
 #reference
-reference/
+/reference/
 
 #reports
-reports/
+/reports/
 
 #src
-src/
+/src/
 
 #docs
-docs/
+/docs/
 
 #models
-models
+/models
