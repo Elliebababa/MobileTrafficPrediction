@@ -1,23 +1,8 @@
 #dataset
 /data/
 
-#notebooks
+#IPython checkpoints
 /notebooks/.ipynb_checkpoints
 
-# IPython checkpoints
-.ipynb_checkpoints/
-
-#reference
-/reference/
-
-#reports
-/reports/
-
-#src
-/src/
-
-#docs
-/docs/
-
-#models
-/models
+#pycharm
+*.pyc
