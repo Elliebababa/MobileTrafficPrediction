@@ -2,7 +2,7 @@
 /data/
 
 #notebooks
-/notebooks/
+/notebooks/.ipynb_checkpoints
 
 # IPython checkpoints
 .ipynb_checkpoints/
