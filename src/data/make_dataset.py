@@ -5,6 +5,9 @@ from pathlib import Path
 import pandas as pd
 from os import walk
 import numpy as np
+import h5py
+import time
+import math
 #from dotenv import find_dotenv, load_dotenv
 
 
@@ -68,6 +71,42 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
         #write csv to file
         gd.to_csv(output_filepath +'/grid'+str(i)+'.csv',header = header)
         logging.info('grid'+str(i)+' aggregated\n')
+
+def test():
+    print('dd')
+
+def make_h5(indir_='../../data/interim/grid5050', outdir_='../../data/processed',fname = 'Nov_internet_data.h5', temporal_gran = 3, spatial_gran = 2):
+    #convert list of grid csv data into h5 format
+    #indir_ refers to path to the csv files
+    #fname is the name of file generated
+    #temporal_gran is the temporal aggregating granduality
+    #spatial_gran is the spatial aggregatin granduality
+    slots = 4320 // temporal_gran
+    rows  = 100 // spatial_gran
+    cols = 100 // spatial_gran
+    f = h5py.File(fname,'w')
+    f_time = f.create_dataset('date',(slots,),dtype = 'S13')
+    f_data = f.create_dataset('data',(slots,1,rows,cols),dtype='float64')
+    start_file = 1
+    #generate time interval
+    timeInter = [1383260400000+i*600000*temporal_gran for i in range(slots)]
+    for i,t in enumerate(timeInter):
+        f_time[i] = bytes(str(t).encode(encoding='utf-8'))
+        
+    for grid in range(1,rows*cols+1):
+        data = pd.read_csv('{}/grid{}.csv'.format(indir_,grid))
+        data['time'] = data['time'].apply(lambda x:int(time.mktime(time.strptime(x, "%Y-%m-%d %H:%M:%S"))*1000))
+        Row = math.ceil(grid/rows)
+        Row -= 1
+        Col = cols if grid % cols == 0 else grid % cols
+        Col -= 1
+        for i,t in enumerate(timeInter):
+            print(data[(data['time'] == t)].traffic.values)
+            f_data[i,0,Row,Col] = float(data[(data['time'] == t)].traffic.values)
+            if i % slots == 100:
+                print(grid,i,0,Row,Col,f_data[i,0,Row,Col])
+    f.close()
+
 
 
 if __name__ == '__main__':
