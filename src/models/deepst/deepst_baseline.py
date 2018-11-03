@@ -25,8 +25,8 @@ batch_size = 32
 T = 144 #interval number of a day
 lr = 0.0002
 len_closeness = 18
-len_period = 3
-len_trend = 3
+len_period = 1
+len_trend = 1
 nb_residual_unit = 2
 
 nb_flow = 1
@@ -79,6 +79,7 @@ class STMatrix(object):
         """
         # offset_week = pd.DateOffset(days=7)
         #offset_frame = pd.DateOffset(minutes=24 * 60 // self.T)
+
         offset_frame = 24 * 60 // self.T * 60
         XC = []
         XP = []
@@ -88,6 +89,7 @@ class STMatrix(object):
         depends = [range(1, len_closeness+1),
                    [PeriodInterval * self.T * j for j in range(1, len_period+1)],
                    [TrendInterval * self.T * j for j in range(1, len_trend+1)]]
+        print('create dataset..',self.T,depends)
 
         i = max(self.T * TrendInterval * len_trend, self.T * PeriodInterval * len_period, len_closeness)
         while i < len(self.pd_timestamps):
