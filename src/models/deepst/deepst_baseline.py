@@ -181,8 +181,8 @@ def build_model(external_dim = None):
     adam = Adam(lr = lr)
     model.compile(loss = 'mse', optimizer = adam, metrics = [metrics.rmse])
     model.summary()
-    from keras.utils.vis_utils import plot_model
-    plot_model(model, to_file='model.png', show_shapes = True)
+    #from keras.utils.vis_utils import plot_model
+    #plot_model(model, to_file='model.png', show_shapes = True)
     return model
 
 def cache(fname, X_train, Y_train, X_test, Y_test, external_dim, timestamp_train, timestamp_test):
@@ -204,13 +204,13 @@ def stat(fname):
         e = int(f['date'][-1])
         ts = time.gmtime(s//1000)
         te = time.gmtime(e//1000)
-        nb_timeslot = (e - s) / (0.5 * 3600) + 48
+        nb_timeslot = (e - s)/1000 / (24/T * 3600) + T
         ts_str, te_str = time.strftime("%Y-%m-%d", ts), time.strftime("%Y-%m-%d", te)
         return nb_timeslot, ts_str, te_str
 
     with h5py.File(fname) as f:
         nb_timeslot, ts_str, te_str = get_nb_timeslot(f)
-        nb_day = int(nb_timeslot / 48)
+        nb_day = int(nb_timeslot / T)
         mmax = f['data'].value.max()
         mmin = f['data'].value.min()
         stat = '=' * 5 + 'stat' + '=' * 5 + '\n' + \
@@ -271,6 +271,7 @@ def load_data(preprocess_name = 'preprocessing.pkl'):
     XT = np.vstack(XT)
     Y = np.vstack(Y)
     print('XC shape: ', XC.shape, 'XP shape: ', XP.shape, 'XT shape: ', XT.shape, 'Y shape: ', Y.shape)
+    print('len_test: ',len_test)
     XC_train, XP_train, XT_train, Y_train = XC[
         :-len_test], XP[:-len_test], XT[:-len_test], Y[:-len_test]
     XC_test, XP_test, XT_test, Y_test = XC[
