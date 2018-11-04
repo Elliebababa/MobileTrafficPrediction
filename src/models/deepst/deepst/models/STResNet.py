@@ -21,7 +21,7 @@ def _shortcut(input, residual):
     #return merge([input, residual], mode='sum')
     return keras.layers.add([input, residual])
 
-def _bn_relu_conv(nb_filter, nb_row, nb_col, subsample=(1, 1), bn=False):
+def _bn_relu_conv(nb_filter, nb_row, nb_col, subsample=(1, 1), bn=True):
     def f(input):
         if bn:
             input = BatchNormalization(mode=0, axis=1)(input)
