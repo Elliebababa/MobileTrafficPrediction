@@ -67,11 +67,11 @@ def stresnet(c_conf=(3, 2, 32, 32), p_conf=(3, 2, 32, 32), t_conf=(3, 2, 32, 32)
             print('input shape:',input.shape)
             main_inputs.append(input)
             # Conv1
-            conv1 = Conv2D(filters = 64, kernel_size = (3,3), padding="same")(input)
+            conv1 = Conv2D(filters = 16, kernel_size = (3,3), padding="same")(input)
             print('conv1 shape:',conv1.shape)
             #conv1 = Convolution2D(nb_filter=64, nb_row=3, nb_col=3, border_mode="same")(input)
             # [nb_residual_unit] Residual Units
-            residual_output = ResUnits(_residual_unit, nb_filter=64,
+            residual_output = ResUnits(_residual_unit, nb_filter=16,
                               repetations=nb_residual_unit)(conv1)
             # Conv2
             activation = Activation('relu')(residual_output)

@@ -18,34 +18,131 @@ import deepst.metrics as metrics
 
 np.random.seed(1324)
 
-#parameters
-nb_epoch = 100
-nb_epoch_cont = 20
-batch_size = 32
-T = 144 #interval number of a day
-lr = 0.0002
-len_closeness = 18
+len_closeness = 3
 len_period = 1
 len_trend = 1
-nb_residual_unit = 2
-
 nb_flow = 1
 days_test = 7
+T = 48 #interval number of a day
 len_test = T * days_test
-map_height, map_width = 100, 100
-datafile ='../../../data/processed/Nov_internet_data_t10_s100100.h5'
+map_height, map_width = 50, 50
+
+
+lr = 0.0002
+
+datafile ='../../../data/processed/Nov_internet_data_t30_s5050.h5'
 path_result = 'RESULT'
 path_model = 'MODEL'
 CACHEDATA = False
 DATAPATH = './'
 path_cache = os.path.join(DATAPATH,'CACHE')
-
+  
+    
 if os.path.isdir(path_result) is False:
     os.mkdir(path_result)
 if os.path.isdir(path_model) is False:
     os.mkdir(path_model)
 if os.path.isdir(path_cache) is False:
     os.mkdir(path_cache)
+
+import click
+@click.command()
+@click.option('--ep',default = 100, help='epoch')
+@click.option('--bc',default = 32, help='batch size')
+@click.option('--ru',default = 2, help='residual unit')
+def main(ep, bc, ru):
+    #training parameters
+    nb_epoch = ep
+    nb_epoch_cont = 20
+    batch_size = bc
+    nb_residual_unit = ru
+    
+    print('loading data...')
+    ts = time.time()
+    fname = os.path.join(DATAPATH, 'CACHE', 'C{}_P{}_T{}.h5'.format(
+        len_closeness, len_period, len_trend))
+    X_train, Y_train, X_test, Y_test, mmn, timestamps_train, timestamps_test = load_data(preprocess_name='preprocessing.pkl')
+    cache(fname, X_train, Y_train, X_test, Y_test,
+                  0, timestamps_train, timestamps_test)
+
+    print("\n days (test): ", [v[:8] for v in timestamps_test[0::T]])
+    print("\n elapsed time (loading data): %.3f seconds\n" % (time.time() - ts))
+
+    print('=' * 10)
+    print("compiling model...")
+    print(
+        "**at the first time, it takes a few minites to compile if you use [Theano] as the backend**")
+
+    ts = time.time()
+    model = build_model(nb_residual_unit)
+    hyperparams_name = 'c{}.p{}.t{}.resunit{}.lr{}'.format(
+        len_closeness, len_period, len_trend, nb_residual_unit, lr)
+    fname_param = os.path.join('MODEL', '{}.best.h5'.format(hyperparams_name))
+
+    early_stopping = EarlyStopping(monitor='val_rmse', patience=2, mode='min')
+    model_checkpoint = ModelCheckpoint(
+        fname_param, monitor='val_rmse', verbose=0, save_best_only=True, mode='min')
+
+    print("\nelapsed time (compiling model): %.3f seconds\n" %
+          (time.time() - ts))
+
+    print('=' * 10)
+    print("training model...")
+    ts = time.time()
+    history = model.fit(X_train, Y_train,
+                        epochs=nb_epoch,
+                        batch_size=batch_size,
+                        validation_split=0.1,
+                        callbacks=[early_stopping, model_checkpoint],
+                        verbose=1)
+    model.save_weights(os.path.join(
+        'MODEL', '{}.h5'.format(hyperparams_name)), overwrite=True)
+    pickle.dump((history.history), open(os.path.join(
+        path_result, '{}.history.pkl'.format(hyperparams_name)), 'wb'))
+    print("\nelapsed time (training): %.3f seconds\n" % (time.time() - ts))
+
+    print('=' * 10)
+    print('evaluating using the model that has the best loss on the valid set')
+    ts = time.time()
+    model.load_weights(fname_param)
+    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[
+                           0] // 48, verbose=0)
+    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
+          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    score = model.evaluate(
+        X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
+    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
+          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    print("\nelapsed time (eval): %.3f seconds\n" % (time.time() - ts))
+
+    print('=' * 10)
+    print("training model (cont)...")
+    ts = time.time()
+    fname_param = os.path.join(
+        'MODEL', '{}.cont.best.h5'.format(hyperparams_name))
+    model_checkpoint = ModelCheckpoint(
+        fname_param, monitor='rmse', verbose=0, save_best_only=True, mode='min')
+    history = model.fit(X_train, Y_train, nb_epoch=nb_epoch_cont, verbose=1, batch_size=batch_size, callbacks=[
+                        model_checkpoint])
+    pickle.dump((history.history), open(os.path.join(
+        path_result, '{}.cont.history.pkl'.format(hyperparams_name)), 'wb'))
+    model.save_weights(os.path.join(
+        'MODEL', '{}_cont.h5'.format(hyperparams_name)), overwrite=True)
+    print("\nelapsed time (training cont): %.3f seconds\n" % (time.time() - ts))
+
+    print('=' * 10)
+    print('evaluating using the final model')
+    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[
+                           0] // 48, verbose=0)
+    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
+          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    ts = time.time()
+    score = model.evaluate(
+        X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
+    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
+          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    print("\nelapsed time (eval cont): %.3f seconds\n" % (time.time() - ts))
+
 
 class STMatrix(object):
     """docstring for STMatrix"""
@@ -174,7 +271,7 @@ class MinMaxNormalization_01(object):
         X = 1. * X * (self._max - self._min) + self._min
         return X
 
-def build_model(external_dim = None):
+def build_model(nb_residual_unit, external_dim = None):
     c_conf = (len_closeness, nb_flow, map_height, map_width) if len_closeness > 0 else None
     p_conf = (len_period, nb_flow, map_height, map_width) if len_period > 0 else None
     t_conf = (len_trend, nb_flow, map_height, map_width) if len_trend > 0 else None
@@ -306,94 +403,6 @@ def string2timestamp(strings, T=48):
     for t in strings:
         timestamps.append(int(t)//1000)
     return timestamps
-
-def main():
-    print('loading data...')
-    ts = time.time()
-    fname = os.path.join(DATAPATH, 'CACHE', 'C{}_P{}_T{}.h5'.format(
-        len_closeness, len_period, len_trend))
-    X_train, Y_train, X_test, Y_test, mmn, timestamps_train, timestamps_test = load_data(preprocess_name='preprocessing.pkl')
-    cache(fname, X_train, Y_train, X_test, Y_test,
-                  0, timestamps_train, timestamps_test)
-
-    print("\n days (test): ", [v[:8] for v in timestamps_test[0::T]])
-    print("\n elapsed time (loading data): %.3f seconds\n" % (time.time() - ts))
-
-    print('=' * 10)
-    print("compiling model...")
-    print(
-        "**at the first time, it takes a few minites to compile if you use [Theano] as the backend**")
-
-    ts = time.time()
-    model = build_model()
-    hyperparams_name = 'c{}.p{}.t{}.resunit{}.lr{}'.format(
-        len_closeness, len_period, len_trend, nb_residual_unit, lr)
-    fname_param = os.path.join('MODEL', '{}.best.h5'.format(hyperparams_name))
-
-    early_stopping = EarlyStopping(monitor='val_rmse', patience=2, mode='min')
-    model_checkpoint = ModelCheckpoint(
-        fname_param, monitor='val_rmse', verbose=0, save_best_only=True, mode='min')
-
-    print("\nelapsed time (compiling model): %.3f seconds\n" %
-          (time.time() - ts))
-
-    print('=' * 10)
-    print("training model...")
-    ts = time.time()
-    history = model.fit(X_train, Y_train,
-                        nb_epoch=nb_epoch,
-                        batch_size=batch_size,
-                        validation_split=0.1,
-                        callbacks=[early_stopping, model_checkpoint],
-                        verbose=1)
-    model.save_weights(os.path.join(
-        'MODEL', '{}.h5'.format(hyperparams_name)), overwrite=True)
-    pickle.dump((history.history), open(os.path.join(
-        path_result, '{}.history.pkl'.format(hyperparams_name)), 'wb'))
-    print("\nelapsed time (training): %.3f seconds\n" % (time.time() - ts))
-
-    print('=' * 10)
-    print('evaluating using the model that has the best loss on the valid set')
-    ts = time.time()
-    model.load_weights(fname_param)
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[
-                           0] // 48, verbose=0)
-    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
-    score = model.evaluate(
-        X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
-    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
-    print("\nelapsed time (eval): %.3f seconds\n" % (time.time() - ts))
-
-    print('=' * 10)
-    print("training model (cont)...")
-    ts = time.time()
-    fname_param = os.path.join(
-        'MODEL', '{}.cont.best.h5'.format(hyperparams_name))
-    model_checkpoint = ModelCheckpoint(
-        fname_param, monitor='rmse', verbose=0, save_best_only=True, mode='min')
-    history = model.fit(X_train, Y_train, nb_epoch=nb_epoch_cont, verbose=1, batch_size=batch_size, callbacks=[
-                        model_checkpoint])
-    pickle.dump((history.history), open(os.path.join(
-        path_result, '{}.cont.history.pkl'.format(hyperparams_name)), 'wb'))
-    model.save_weights(os.path.join(
-        'MODEL', '{}_cont.h5'.format(hyperparams_name)), overwrite=True)
-    print("\nelapsed time (training cont): %.3f seconds\n" % (time.time() - ts))
-
-    print('=' * 10)
-    print('evaluating using the final model')
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[
-                           0] // 48, verbose=0)
-    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
-    ts = time.time()
-    score = model.evaluate(
-        X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
-    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
-    print("\nelapsed time (eval cont): %.3f seconds\n" % (time.time() - ts))
-
 
 
 if __name__ == '__main__':
