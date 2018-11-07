@@ -21,10 +21,10 @@ def _shortcut(input, residual):
     #return merge([input, residual], mode='sum')
     return keras.layers.add([input, residual])
 
-def _bn_relu_conv(nb_filter, nb_row, nb_col, subsample=(1, 1), bn=True):
+def _bn_relu_conv(nb_filter, nb_row, nb_col, subsample=(1, 1), bn=False):
     def f(input):
         if bn:
-            input = BatchNormalization(mode=0, axis=1)(input)
+            input = BatchNormalization(axis=1)(input)
         activation = Activation('relu')(input)
         return Conv2D(filters = nb_filter,kernel_size = (nb_row,nb_col), strides=(1, 1), padding="same")(activation)#Convolution2D(nb_filter=nb_filter, nb_row=nb_row, nb_col=nb_col, subsample=subsample, border_mode="same")(activation)
     return f
@@ -32,6 +32,7 @@ def _bn_relu_conv(nb_filter, nb_row, nb_col, subsample=(1, 1), bn=True):
 
 def _residual_unit(nb_filter, init_subsample=(1, 1)):
     def f(input):
+        print(input.shape)
         residual = _bn_relu_conv(nb_filter, 3, 3)(input)
         residual = _bn_relu_conv(nb_filter, 3, 3)(residual)
         return _shortcut(input, residual)
@@ -66,6 +67,8 @@ def stresnet(c_conf=(3, 2, 32, 32), p_conf=(3, 2, 32, 32), t_conf=(3, 2, 32, 32)
             input = Input(shape=(nb_flow * len_seq,map_height, map_width))
             print('input shape:',input.shape)
             main_inputs.append(input)
+            #bn
+            #input = BatchNormalization(axis=1)(input)            
             # Conv1
             conv1 = Conv2D(filters = 16, kernel_size = (3,3), padding="same")(input)
             print('conv1 shape:',conv1.shape)

@@ -9,7 +9,7 @@ import click
 import pandas as pd
 from copy import copy
 from keras.optimizers import Adam
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 import keras.utils
 
 from deepst.models.STResNet import stresnet
@@ -23,14 +23,14 @@ len_period = 1
 len_trend = 1
 nb_flow = 1
 days_test = 7
-T = 48 #interval number of a day
+T = 48#144 #interval number of a day
 len_test = T * days_test
-map_height, map_width = 50, 50
+map_height, map_width = 30,30#100,100#50, 50
 
 
 lr = 0.0002
 
-datafile ='../../../data/processed/Nov_internet_data_t30_s5050.h5'
+datafile ='../../../data/processed/Nov_internet_data_3030_13431545.h5'
 path_result = 'RESULT'
 path_model = 'MODEL'
 CACHEDATA = False
@@ -47,27 +47,27 @@ if os.path.isdir(path_cache) is False:
 
 import click
 @click.command()
-@click.option('--ep',default = 100, help='epoch')
+@click.option('--ep',default = 500, help='epoch')
+@click.option('--epc',default = 100, help='epoch_continue')
 @click.option('--bc',default = 32, help='batch size')
 @click.option('--ru',default = 2, help='residual unit')
-def main(ep, bc, ru):
+def main(ep,epc, bc, ru):
     #training parameters
     nb_epoch = ep
-    nb_epoch_cont = 20
+    nb_epoch_cont = epc
     batch_size = bc
     nb_residual_unit = ru
     
     print('loading data...')
     ts = time.time()
-    fname = os.path.join(DATAPATH, 'CACHE', 'C{}_P{}_T{}.h5'.format(
-        len_closeness, len_period, len_trend))
+    fname = os.path.join(DATAPATH, 'CACHE', 'C{}_P{}_T{}.h5'.format(len_closeness, len_period, len_trend))
     X_train, Y_train, X_test, Y_test, mmn, timestamps_train, timestamps_test = load_data(preprocess_name='preprocessing.pkl')
-    cache(fname, X_train, Y_train, X_test, Y_test,
-                  0, timestamps_train, timestamps_test)
+    cache(fname, X_train, Y_train, X_test, Y_test, 0, timestamps_train, timestamps_test)
 
     print("\n days (test): ", [v[:8] for v in timestamps_test[0::T]])
     print("\n elapsed time (loading data): %.3f seconds\n" % (time.time() - ts))
-
+    
+    #==== compiling model ==================================================================================    
     print('=' * 10)
     print("compiling model...")
     print(
@@ -75,72 +75,53 @@ def main(ep, bc, ru):
 
     ts = time.time()
     model = build_model(nb_residual_unit)
-    hyperparams_name = 'c{}.p{}.t{}.resunit{}.lr{}'.format(
-        len_closeness, len_period, len_trend, nb_residual_unit, lr)
+    hyperparams_name = 'c{}.p{}.t{}.resunit{}.lr{}'.format(len_closeness, len_period, len_trend, nb_residual_unit, lr)
     fname_param = os.path.join('MODEL', '{}.best.h5'.format(hyperparams_name))
 
     early_stopping = EarlyStopping(monitor='val_rmse', patience=2, mode='min')
-    model_checkpoint = ModelCheckpoint(
-        fname_param, monitor='val_rmse', verbose=0, save_best_only=True, mode='min')
+    model_checkpoint = ModelCheckpoint(fname_param, monitor='val_rmse', verbose=0, save_best_only=True, mode='min')
+    tensor_board = TensorBoard(log_dir = './logs', histogram_freq = 0, write_graph = True, write_images = False, embeddings_freq = 0, embeddings_layer_names = None, embeddings_metadata = None)
 
-    print("\nelapsed time (compiling model): %.3f seconds\n" %
-          (time.time() - ts))
-
+    print("\nelapsed time (compiling model): %.3f seconds\n" %(time.time() - ts))
+    #==== training model ===================================================================================
     print('=' * 10)
     print("training model...")
     ts = time.time()
-    history = model.fit(X_train, Y_train,
-                        epochs=nb_epoch,
-                        batch_size=batch_size,
-                        validation_split=0.1,
-                        callbacks=[early_stopping, model_checkpoint],
-                        verbose=1)
-    model.save_weights(os.path.join(
-        'MODEL', '{}.h5'.format(hyperparams_name)), overwrite=True)
-    pickle.dump((history.history), open(os.path.join(
-        path_result, '{}.history.pkl'.format(hyperparams_name)), 'wb'))
+    history = model.fit(X_train, Y_train, epochs=nb_epoch, batch_size=batch_size, validation_split=0.1, callbacks=[early_stopping, model_checkpoint,tensor_board], verbose=1)
+    model.save_weights(os.path.join('MODEL', '{}.h5'.format(hyperparams_name)), overwrite=True)
+    pickle.dump((history.history), open(os.path.join(path_result, '{}.history.pkl'.format(hyperparams_name)), 'wb'))
     print("\nelapsed time (training): %.3f seconds\n" % (time.time() - ts))
-
+    #==== evaluating model ===================================================================================
     print('=' * 10)
     print('evaluating using the model that has the best loss on the valid set')
     ts = time.time()
     model.load_weights(fname_param)
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[
-                           0] // 48, verbose=0)
-    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
-    score = model.evaluate(
-        X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
-    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[0] // 48, verbose=0)
+    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
+    score = model.evaluate(X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
+    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
     print("\nelapsed time (eval): %.3f seconds\n" % (time.time() - ts))
-
+    #==== continue to train model ==============================================================================
     print('=' * 10)
     print("training model (cont)...")
     ts = time.time()
-    fname_param = os.path.join(
-        'MODEL', '{}.cont.best.h5'.format(hyperparams_name))
-    model_checkpoint = ModelCheckpoint(
-        fname_param, monitor='rmse', verbose=0, save_best_only=True, mode='min')
-    history = model.fit(X_train, Y_train, nb_epoch=nb_epoch_cont, verbose=1, batch_size=batch_size, callbacks=[
-                        model_checkpoint])
-    pickle.dump((history.history), open(os.path.join(
-        path_result, '{}.cont.history.pkl'.format(hyperparams_name)), 'wb'))
-    model.save_weights(os.path.join(
-        'MODEL', '{}_cont.h5'.format(hyperparams_name)), overwrite=True)
+    fname_param = os.path.join('MODEL', '{}.cont.best.h5'.format(hyperparams_name))
+    model_checkpoint = ModelCheckpoint(fname_param, monitor='rmse', verbose=0, save_best_only=True, mode='min')
+    history = model.fit(X_train, Y_train, epochs=nb_epoch_cont, verbose=1, batch_size=batch_size, callbacks=[model_checkpoint, tensor_board])
+    pickle.dump((history.history), open(os.path.join(path_result, '{}.cont.history.pkl'.format(hyperparams_name)), 'wb'))
+    model.save_weights(os.path.join('MODEL', '{}_cont.h5'.format(hyperparams_name)), overwrite=True)
     print("\nelapsed time (training cont): %.3f seconds\n" % (time.time() - ts))
-
+    #==== evaluate on the final model ===============================================================================
     print('=' * 10)
     print('evaluating using the final model')
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[
-                           0] // 48, verbose=0)
-    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[0] // 48, verbose=0)
+    print('(bs = all)Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
+
+    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[0] // 48, verbose=0)
+    print('(bs // 48)Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
     ts = time.time()
-    score = model.evaluate(
-        X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
-    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[1] * (mmn._max - mmn._min) ))
+    score = model.evaluate(X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
+    print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
     print("\nelapsed time (eval cont): %.3f seconds\n" % (time.time() - ts))
 
 
@@ -247,29 +228,6 @@ class MinMaxNormalization(object):
         X = 1. * X * (self._max - self._min) + self._min
         return X
 
-class MinMaxNormalization_01(object):
-    '''MinMax Normalization --> [0, 1]
-       x = (x - min) / (max - min).
-    '''
-    def __init__(self):
-        pass
-
-    def fit(self, X):
-        self._min = X.min()
-        self._max = X.max()
-        print("min:", self._min, "max:", self._max)
-
-    def transform(self, X):
-        X = 1. * (X - self._min) / (self._max - self._min)
-        return X
-
-    def fit_transform(self, X):
-        self.fit(X)
-        return self.transform(X)
-
-    def inverse_transform(self, X):
-        X = 1. * X * (self._max - self._min) + self._min
-        return X
 
 def build_model(nb_residual_unit, external_dim = None):
     c_conf = (len_closeness, nb_flow, map_height, map_width) if len_closeness > 0 else None
