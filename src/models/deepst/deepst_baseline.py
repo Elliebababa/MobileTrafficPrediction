@@ -23,14 +23,14 @@ len_period = 1
 len_trend = 1
 nb_flow = 1
 days_test = 7
-T = 48#144 #interval number of a day
+T = 144#48#144 #interval number of a day
 len_test = T * days_test
-map_height, map_width = 30,30#100,100#50, 50
+map_height, map_width = 15,15#30,30#100,100#50, 50
 
 
 lr = 0.0002
 
-datafile ='../../../data/processed/Nov_internet_data_3030_13431545.h5'
+datafile ='../../../data/processed/Nov_internet_data_t10_s1515.h5'
 path_result = 'RESULT'
 path_model = 'MODEL'
 CACHEDATA = False

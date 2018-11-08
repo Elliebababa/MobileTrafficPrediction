@@ -3,8 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import math
 import time
+from sklearn import preprocessing
 
-def DTWdistance(s1, s2, w = 48):
+def DTWdistance(s1, s2, w = 6):
     w = max(w, abs(len(s1)-len(s2)))
     DTW = {}
     for i in range(-1,len(s1)):
@@ -29,17 +30,34 @@ def loadgrids(gridNum = 10000, path_to_file = '../../data/processed/gridTraffic3
     print('finish loading grids from ' + path_to_file)
     return grids
 
-def gen_dtw_matrix(grids, gridNum = 10000):
+def gen_dtw_matrix(grids, gridNum = 10000,w = 6):
+    #grids is list of grid series features, i.e. the temporal series of grids
     print('generating matrix...')
     str_time = time.time()
-    mat = np.zeros((gridNum,gridNum))
+    dtw_mat = np.zeros((gridNum,gridNum))
     for i in range(gridNum):
         print('grid'+str(i)+'....')
         for j in range(i+1,gridNum):
-            mat[i][j] = mat[j][i] = DTWdistance(grids[i],grids[j])
+            dtw = DTWdistance(grids[i],grids[j],w)
+            dtw_mat[i][j] = dtw_mat[j][i] = dtw
         print('{} seconds been spent..'.format(time.time()-str_time))
     print('done...')
-    return mat
+    return dtw_mat
+
+def gen_weight_from_dtw(dtw_mat):
+    min_max_scaler = preprocessing.MinMaxScaler()
+    dtw_minmax = min_max_scaler.fit_transform(dtw_mat)
+    wei_mat = np.exp(-dtw_minmax)
+    return wei_mat
+
+def build(dataX):
+    nb_slots,nb_row,nb_col = dataX.shape
+    nb_grid = nb_row*nb_col
+    d = np.reshape(dataX,(nb_slots,nb_grid))
+    grids = d.T
+    dtw_mat = gen_dtw_matrix(grids,nb_grid)
+    wei_mat = gen_weight_from_dtw(dtw_mat)
+    return wei_mat
 
 if __name__ == "__main__":
     gridNum = 5
