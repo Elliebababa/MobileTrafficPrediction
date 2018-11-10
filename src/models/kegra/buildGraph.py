@@ -20,6 +20,18 @@ def DTWdistance(s1, s2, w = 6):
     
     return math.sqrt(DTW[len(s1) - 1, len(s2) - 1])
 
+def LB_Keogh(s1,s2,r = 6):
+    LB_sum = 0
+    for ind, i in enumerate(s1):
+        s = s2[(ind - r if ind - r >= 0 else 0):(ind + r)]
+        lb = min(s)
+        ub = max(s)
+        if i > ub:
+            LB_sum = LB_sum+(i - ub) ** 2
+        elif i < lb:
+            LB_sum = LB_sum+(i - lb) ** 2
+    return math.sqrt(LB_sum)
+
 
 def loadgrids(gridNum = 10000, path_to_file = '../../data/processed/gridTraffic30/gridTraffic30'):
     print('loading '+ str(gridNum) +' grids from ' + path_to_file)
@@ -30,19 +42,23 @@ def loadgrids(gridNum = 10000, path_to_file = '../../data/processed/gridTraffic3
     print('finish loading grids from ' + path_to_file)
     return grids
 
-def gen_dtw_matrix(grids, gridNum = 10000,w = 6):
+def gen_dis_matrix(grids, gridNum = 10000, method ='dtw',w = 6):#method = dte || lb
     #grids is list of grid series features, i.e. the temporal series of grids
     print('generating matrix...')
     str_time = time.time()
-    dtw_mat = np.zeros((gridNum,gridNum))
+    dis_mat = np.zeros((gridNum,gridNum))
+    if method == 'lb':
+        func = LB_Keogh
+    else:
+        func = DTWdistance
     for i in range(gridNum):
         print('grid'+str(i)+'....')
         for j in range(i+1,gridNum):
-            dtw = DTWdistance(grids[i],grids[j],w)
-            dtw_mat[i][j] = dtw_mat[j][i] = dtw
+            dis = func(grids[i],grids[j],w)
+            dis_mat[i][j] = dis_mat[j][i] = dis
         print('{} seconds been spent..'.format(time.time()-str_time))
     print('done...')
-    return dtw_mat
+    return dis_mat
 
 def gen_weight_from_dtw(dtw_mat):
     min_max_scaler = preprocessing.MinMaxScaler()
@@ -50,13 +66,13 @@ def gen_weight_from_dtw(dtw_mat):
     wei_mat = np.exp(-dtw_minmax)
     return wei_mat
 
-def build(dataX):
+def build(dataX, meth):
     nb_slots,nb_row,nb_col = dataX.shape
     nb_grid = nb_row*nb_col
     d = np.reshape(dataX,(nb_slots,nb_grid))
     grids = d.T
-    dtw_mat = gen_dtw_matrix(grids,nb_grid)
-    wei_mat = gen_weight_from_dtw(dtw_mat)
+    dis_mat = gen_dis_matrix(grids,nb_grid,meth)
+    wei_mat = gen_weight_from_dtw(dis_mat)
     return wei_mat
 
 if __name__ == "__main__":
