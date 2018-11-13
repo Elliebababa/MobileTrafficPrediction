@@ -3,13 +3,41 @@ from __future__ import print_function
 import scipy.sparse as sp
 import numpy as np
 from scipy.sparse.linalg.eigen.arpack import eigsh, ArpackNoConvergence
-
+import pandas as pd
 
 def encode_onehot(labels):
     classes = set(labels)
     classes_dict = {c: np.identity(len(classes))[i, :] for i, c in enumerate(classes)}
     labels_onehot = np.array(list(map(classes_dict.get, labels)), dtype=np.int32)
     return labels_onehot
+
+class MinMaxNormalization(object):
+    '''MinMax Normalization --> [-1, 1]
+       x = (x - min) / (max - min).
+       x = x * 2 - 1
+    '''
+
+    def __init__(self):
+        pass
+
+    def fit(self, X):
+        self._min = X.min()
+        self._max = X.max()
+        print("min:", self._min, "max:", self._max)
+
+    def transform(self, X):
+        X = 1. * (X - self._min) / (self._max - self._min)
+        X = X * 2. - 1.
+        return X
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
+
+    def inverse_transform(self, X):
+        X = (X + 1.) / 2.
+        X = 1. * X * (self._max - self._min) + self._min
+        return X
 
 
 def load_data(path="data/cora/", dataset="cora"):
@@ -58,7 +86,16 @@ def sample_mask(idx, l):
     mask[idx] = 1
     return np.array(mask, dtype=np.bool)
 
+#related function
+def load_data(file_name = 'grid1.csv',path = '../../../data/interim/grid_t_10_s100100'):
+    print('loading data from {}...'.format(path))
+    grid = pd.read_csv('{}/{}'.format(path,file_name))    
+    features = grid.iloc[:,1:-1]
+    y = grid.iloc[:,-1]
+    return features[:-1],y[1:],y
 
+
+'''
 def get_splits(y):
     idx_train = range(140)
     idx_val = range(200, 500)
@@ -71,7 +108,7 @@ def get_splits(y):
     y_test[idx_test] = y[idx_test]
     train_mask = sample_mask(idx_train, y.shape[0])
     return y_train, y_val, y_test, idx_train, idx_val, idx_test, train_mask
-
+'''
 
 def categorical_crossentropy(preds, labels):
     return np.mean(-np.log(np.extract(labels, preds)))

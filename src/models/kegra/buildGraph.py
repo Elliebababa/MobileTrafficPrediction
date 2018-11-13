@@ -42,7 +42,7 @@ def loadgrids(gridNum = 10000, path_to_file = '../../data/processed/gridTraffic3
     print('finish loading grids from ' + path_to_file)
     return grids
 
-def gen_dis_matrix(grids, gridNum = 10000, method ='dtw',w = 6):#method = dte || lb
+def gen_dis_matrix(grids, gridNum = 10000, method ='lb',w = 6):#method = dte || lb
     #grids is list of grid series features, i.e. the temporal series of grids
     print('generating matrix...')
     str_time = time.time()
@@ -66,7 +66,7 @@ def gen_weight_from_dtw(dtw_mat):
     wei_mat = np.exp(-dtw_minmax)
     return wei_mat
 
-def build(dataX, meth):
+def build(dataX, meth = 'lb'):
     nb_slots,nb_row,nb_col = dataX.shape
     nb_grid = nb_row*nb_col
     d = np.reshape(dataX,(nb_slots,nb_grid))
