@@ -2,7 +2,7 @@ from __future__ import print_function
 import pandas as pd
 
 from keras.models import Sequential, Model
-from keras.layers import Dense, LSTM, ConvLSTM2D, Input, Dropout, TimeDistributed, Activation, Reshape
+from keras.layers import Conv2D, Dense, LSTM, ConvLSTM2D, Input, Dropout, TimeDistributed, Activation, Reshape
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
@@ -11,13 +11,14 @@ from keras.regularizers import l2
 from scipy import sparse
 from graph_ import GraphConvolution, GraphInput
 from utils import *
+from metrics import *
 import buildGraph
 import time
 import h5py
 import os
 import math
 import keras.backend as K
-
+import pickle
 # Define parameters
 FILTER = 'localpool'  # 'chebyshev'
 MAX_DEGREE = 2  # maximum polynomial degree
@@ -29,11 +30,13 @@ T = 144
 lr = 0.0002
 look_back = 6 # look back of interval
 nb_epoch = 500
+nb_epoch_cont = 100
 batch_size = 1
 path_result = 'RESULT'
 path_model = 'MODEL'
 CACHEDATA = False
 DATAPATH = './'
+modelbase = 'cnnlstm'
 path_cache = os.path.join(DATAPATH,'CACHE')
   
     
@@ -71,23 +74,49 @@ def load_data(file_name = '../../../data/processed/Nov_internet_data_t10_s3030_4
     y_test = y[-slots_test:] 
     return x_train, x_test, y_train, y_test, mmn, A 
 
-
-def mean_squared_error(y_true, y_pred):
-    return K.mean(K.square(y_pred - y_true)) 
-
-def rmse(y_true, y_pred):
-    return mean_squared_error(y_true, y_pred) ** 0.5
-
 def convlstm(input_shape):
     look_back, dimenson, nb_nodes = input_shape
     rows = int(math.sqrt(nb_nodes))
     input = Input(shape=(look_back, dimenson,  nb_nodes))
     input1 = Reshape(target_shape = (look_back, dimenson, rows, rows))(input)
-    #K.reshape(input_shape, shape=(look_back, dimenson, rows, rows))
     conlstm1 = ConvLSTM2D(filters = 1, kernel_size = (3,3), padding="same")(input1)
     main_output = Activation('tanh')(conlstm1)
     main_output1 = Reshape(target_shape = (nb_nodes,))(main_output)
-    model = Model(input = input, output = main_output1)
+    model = Model(input = input, output = main_output1, name = 'convlstm')
+    adam = Adam(lr = lr)
+    model.compile(loss = 'mse', optimizer = adam, metrics = [rmse])
+    model.summary()
+    from keras.utils.vis_utils import plot_model
+    plot_model(model, to_file='model.png', show_shapes = True)
+    return model
+
+def fclstm(input_shape):
+    print('cnnlstm selected... compiling...')
+    look_back, dimenson, nb_nodes = input_shape
+    rows = int(math.sqrt(nb_nodes))
+    input = Input(shape=(look_back, dimenson,  nb_nodes))
+    input1 = Reshape(target_shape = (look_back, dimenson*nb_nodes))(input)
+    lstm = LSTM(64)(input1)
+    main_output = Dense(nb_nodes, activation='tanh')(lstm)
+    model = Model(input = input, output =main_output, name ='fclstm')
+    adam = Adam(lr = lr)
+    model.compile(loss = 'mse', optimizer = adam, metrics = [rmse])
+    model.summary()
+    from keras.utils.vis_utils import plot_model
+    plot_model(model, to_file='model.png', show_shapes = True)
+    return model
+
+def cnnlstm(input_shape):
+    print('cnnlstm selected... compiling...')
+    look_back, dimenson, nb_nodes = input_shape
+    rows = int(math.sqrt(nb_nodes))
+    input = Input(shape=(look_back, dimenson,  nb_nodes))
+    input1 = Reshape(target_shape = (look_back,dimenson, rows, rows))(input)
+    wrapped = TimeDistributed(Conv2D(filters = 1,kernel_size = (3,3), strides=(1, 1), padding="same"))(input1)
+    input1 = Reshape(target_shape = (look_back, dimenson*nb_nodes))(wrapped)
+    lstm = LSTM(64)(input1)
+    main_output = Dense(nb_nodes, activation='tanh')(lstm)
+    model = Model(input = input, output =main_output, name ='cnnlstm')
     adam = Adam(lr = lr)
     model.compile(loss = 'mse', optimizer = adam, metrics = [rmse])
     model.summary()
@@ -97,9 +126,13 @@ def convlstm(input_shape):
 
 
 def build_model(modelbase = 'convlstm',input_shape = (6, 1, 900)):
+    print(modelbase)
     if modelbase == 'convlstm':
         return convlstm(input_shape)
-
+    if modelbase == 'cnnlstm':
+        return cnnlstm(input_shape)
+    if modelbase == 'fclstm':
+        return fclstm(input_shape)
 
 def main():
     # Get data
@@ -118,7 +151,6 @@ def main():
     print('=' * 10)
     print("compiling model...")
     ts = time.time()
-    modelbase = 'convlstm'
     model = build_model(modelbase, X_train[0].shape)
     hyperparams_name = 'model_{}'.format(modelbase)
     fname_param = os.path.join('MODEL', '{}.best.h5'.format(hyperparams_name))
@@ -137,56 +169,44 @@ def main():
     pickle.dump((history.history), open(os.path.join(path_result, '{}.history.pkl'.format(hyperparams_name)), 'wb'))
     print("\nelapsed time (training): %.3f seconds\n" % (time.time() - ts))
     
-    '''
+
     #==== evaluating model ===================================================================================
     print('=' * 10)
     print('evaluating using the model that has the best loss on the valid set')
     ts = time.time()
     model.load_weights(fname_param)
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
     print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
-    score = model.evaluate(X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
+    score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
     print("\nelapsed time (eval): %.3f seconds\n" % (time.time() - ts))
+    
     #==== continue to train model ==============================================================================
     print('=' * 10)
     print("training model (cont)...")
     ts = time.time()
     fname_param = os.path.join('MODEL', '{}.cont.best.h5'.format(hyperparams_name))
     model_checkpoint = ModelCheckpoint(fname_param, monitor='rmse', verbose=0, save_best_only=True, mode='min')
-    history = model.fit(X_train, Y_train, epochs=nb_epoch_cont, verbose=1, batch_size=batch_size, callbacks=[model_checkpoint, tensor_board])
+    history = model.fit(X_train, y_train, epochs=nb_epoch_cont, verbose=1, batch_size=batch_size, callbacks=[model_checkpoint, tensor_board])
     pickle.dump((history.history), open(os.path.join(path_result, '{}.cont.history.pkl'.format(hyperparams_name)), 'wb'))
     model.save_weights(os.path.join('MODEL', '{}_cont.h5'.format(hyperparams_name)), overwrite=True)
     print("\nelapsed time (training cont): %.3f seconds\n" % (time.time() - ts))
     #==== evaluate on the final model ===============================================================================
     print('=' * 10)
     print('evaluating using the final model')
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[0] // 48, verbose=0)
-    print('(bs = all)Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
 
-    score = model.evaluate(X_train, Y_train, batch_size=Y_train.shape[0] // 48, verbose=0)
-    print('(bs // 48)Train score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
     ts = time.time()
-    score = model.evaluate(X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
+    score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' % (score[0], score[1], score[1] * (mmn._max - mmn._min)/2. ))
     print("\nelapsed time (eval cont): %.3f seconds\n" % (time.time() - ts))
-    '''
 
 
-if __name__ == '__main__':
-    main()
-
-
-
-
-    
 
 
 '''
-
-
-
-
 
 
 
@@ -297,6 +317,9 @@ print("Test set results:",
 '''
 
 
+
+if __name__ == '__main__':
+    main()
 
 
 
