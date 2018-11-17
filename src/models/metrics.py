@@ -24,9 +24,6 @@ def ma(y_true, y_pred):
     #mean accuracy
     return 1 - mape(y_true, y_pred)
 
-def nrmse(y_true, y_pred):
-    return rmse(y_true, y_pred)/K.mean(y_true)
-
 def masked_mean_squared_error(y_true, y_pred):
     idx = (y_true > 1e-6).nonzero()
     return K.mean(K.square(y_pred[idx] - y_true[idx]))

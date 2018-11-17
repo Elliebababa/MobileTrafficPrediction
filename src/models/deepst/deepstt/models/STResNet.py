@@ -1,4 +1,4 @@
- '''
+'''
     ST-ResNet: Deep Spatio-temporal Residual Networks
 '''
 
