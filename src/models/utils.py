@@ -1,6 +1,6 @@
 import h5py
 import numpy as np
-
+from kegra import buildGraph
 class MinMaxNormalization(object):
     '''MinMax Normalization --> [-1, 1]
        x = (x - min) / (max - min).
@@ -34,8 +34,11 @@ def load_data_1(file_name = '../../data/processed/Nov_internet_data_t10_s3030_40
     #load data for convlstm cnnlsrm fclstm 
     f = h5py.File(file_name, 'r')
     data = f['data'].value
-    A = []
+    #A = []
     #A = buildGraph.build(np.vstack(data))
+    A = np.load('wight_matrix_lb_weekly_4070.npy')
+    print('A: ',A)
+    print('A shape', A.shape)
     n_slots, n_features, n_rows, n_cols = data.shape
     data = data.reshape(n_slots, n_features, n_rows*n_cols)
 
