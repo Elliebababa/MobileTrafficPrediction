@@ -72,10 +72,9 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
         gd.to_csv(output_filepath +'/grid'+str(i)+'.csv',header = header)
         logging.info('grid'+str(i)+' aggregated\n')
 
-def test():
-    print('dd')
 
-def make_h5(indir_='../../data/interim/grid5050', outdir_='../../data/processed',fname = 'Nov_internet_data.h5', temporal_gran = 3, spatial_gran = 2):
+
+def make_h5(indir_='../../data/interim/grid5050', outdir_='../../data/processed',fname = 'Nov_internet_data_t30_s5050.h5', temporal_gran = 3, spatial_gran = 2):
     #convert list of grid csv data into h5 format
     #indir_ refers to path to the csv files
     #fname is the name of file generated
@@ -101,8 +100,8 @@ def make_h5(indir_='../../data/interim/grid5050', outdir_='../../data/processed'
         Col = cols if grid % cols == 0 else grid % cols
         Col -= 1
         for i,t in enumerate(timeInter):
-            print(data[(data['time'] == t)].traffic.values)
-            f_data[i,0,Row,Col] = float(data[(data['time'] == t)].traffic.values)
+            print(data[(data['time'] == t)].traffic)
+            f_data[i,0,Row,Col] = float(data[(data['time'] == t)].traffic)
             if i % slots == 100:
                 print(grid,i,0,Row,Col,f_data[i,0,Row,Col])
     f.close()
