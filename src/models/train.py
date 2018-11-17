@@ -68,7 +68,7 @@ def build_model(modelbase = 'convlstm',input_shape = (6, 1, 900)):
     if modelbase == 'deepst':
         model = deepst_model.builddeepst()
     if modelbase == 'gcnmodel':
-        model = gcnmodel.buildmodel(input_shape[1:])
+        model = gcnmodel.buildmodel(input_shape)
     adam = Adam(lr = lr)
     model.compile(loss = 'mse', optimizer = adam, metrics = [metrics.rmse, metrics.mape, metrics.ma])
     model.summary()
@@ -89,25 +89,25 @@ def main():
         #cache(fname, X_train, Y_train, X_test, Y_test, 0, timestamps_train, timestamps_test)
     else:
         #convlstm, cnnlstm, fclstm, deepst, gcnlstm
-        X_train, X_test, y_train, y_test, mmn, A = load_data_1()
+        X_train, X_test, y_train, y_test, mmn = load_data_1()
         print(" X_train shape : {} \n X_test shape : {} \n y_train shape: {} \n y_test shape : {}".format(np.asarray(X_train).shape, np.asarray(X_test).shape, np.asarray(y_train).shape, np.asarray(y_test).shape))
         X_train = np.asarray(X_train)
         X_test = np.asarray(X_test)
         y_train = np.asarray(y_train)
         y_test = np.asarray(y_test)
-        if modelbase == 'gcnmodel':
-            #A = np.asarray(A)
-            X_train = np.sum(X_train, axis = 1)
-            print(X_train.shape)
-            X_train = [X_train,np.tile(A,(X_train.shape[0],1))]
-            X_test = [X_test, np.tile(A,(X_test.shape[0],1))]
-            print('type: ',type(X_train), type(A))
+        """   if modelbase == 'gcnmodel':
+                           #A = np.asarray(A)
+                           X_train = np.sum(X_train, axis = 1)
+                           print(X_train.shape)
+                           X_train = [X_train,np.tile(A,(X_train.shape[0],1))]
+                           X_test = [X_test, np.tile(A,(X_test.shape[0],1))]
+                           print('type: ',type(X_train), type(A))"""
 
     #print("\n days (test): ", [v[:8] for v in timestamps_test[0::T]])
     print("\n elapsed time (loading data): %.3f seconds\n" % (time.time() - ts))
 
     #==== compiling model ==================================================================================    
-    '''
+    
     print('=' * 10)
     print("compiling model...")
     ts = time.time()
@@ -164,7 +164,7 @@ def main():
     score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_test)), score[2], score[3]))
     print("\nevaluate final model elapsed time (eval cont): %.3f seconds\n" % (time.time() - ts))
-    '''
+    
 
 if __name__ == '__main__':
     main()
