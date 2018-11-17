@@ -23,7 +23,7 @@ from utils import *
 import metrics
 #model
 from kegra import convlstm
-from deepst import deepst_model
+#from deepst import deepst_model
 
 # define parameters for graph convolution
 
@@ -57,7 +57,7 @@ if os.path.isdir(path_cache) is False:
     os.mkdir(path_cache)
 
 def build_model(modelbase = 'convlstm',input_shape = (6, 1, 900)):
-    print(modelbase)
+    print('using model...',modelbase)
     if modelbase == 'convlstm':
         model = convlstm.convlstm(input_shape)
     if modelbase == 'cnnlstm':
@@ -70,13 +70,17 @@ def build_model(modelbase = 'convlstm',input_shape = (6, 1, 900)):
     model.compile(loss = 'mse', optimizer = adam, metrics = [metrics.rmse, metrics.mape, metrics.ma])
     model.summary()
     
-    from keras.utils.vis_utils import plot_model
-    plot_model(model, to_file='model_{}.png'.format(modelbase), show_shapes = True)
+    #from keras.utils.vis_utils import plot_model
+    #plot_model(model, to_file='model_{}.png'.format(modelbase), show_shapes = True)
     
     return model
 
 
-def main():
+import click
+@click.command()
+@click.option('--modelbase',default='convlstm',help='convlstm,cnnlstm,fclstm,deepst')
+def main(modelbase):
+    modelbase = modelbase
     # Get data
     print('loading data...')
     ts = time.time()
