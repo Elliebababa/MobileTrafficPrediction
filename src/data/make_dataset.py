@@ -12,9 +12,8 @@ import math
 
 
 @click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
-
+@click.option('--input_filepath', type=click.Path(exists=True))
+@click.option('--output_filepath', type=click.Path())
 def main(input_filepath = None, output_filepath = None):
     """ Runs data processing scripts to turn raw data from (../../data/raw) into
         cleaned data ready to be analyzed (saved in ../../data/processed).
@@ -22,8 +21,8 @@ def main(input_filepath = None, output_filepath = None):
     """
     logger = logging.getLogger(__name__)
     logger.info('making data set from raw data')
-    Nov = loadRaw(input_filepath+'/milan/sms-call-internet-mi/sms-call-internet-mi-Nov')
-    aggregateGridData(Nov,output_filepath+'/gridTraffic')
+    dailydata = loadRaw(input_filepath)
+    aggregateGridData(dailydata,output_filepath+'/gridTraffic')
 
 def loadRaw(filepath = None,names = []):
     sheetList = []
@@ -55,12 +54,14 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
         #deal with missing data
         gd = gd.fillna(0)
 
-
         '''not all the time are recorded in the dataset, so we need to check and insert those missing interval'''
 
         #check and insert missing timeInterval
         #suppose that all the interval are recorded between 1383260400000,1385851800000, i.e. from 11.01 07:00 - 12.01 6:60 (30 days,720 hours)
-        tt = list(range(1383260400000,1385852400000,600000))#gd.index
+        
+        ##tt = list(range(1383260400000,1385852400000,600000))#gd.index November interval
+        tt = list(range(1385852400000,1388617200000,600000))
+        
         for id, time in enumerate(tt[:-1]):
             if not tt[id + 1] == time + 600000:
                 for missingInterval in range(time + 600000, tt[id + 1],600000):
