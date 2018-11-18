@@ -36,7 +36,7 @@ lr = 0.0002
 look_back = 6 # look back of interval, the same as len_closeness
 
 nb_epoch = 500
-patience = 10  # early stopping patience
+patience = 1  # early stopping patience
 nb_epoch_cont = 100
 batch_size = 1
 
@@ -136,7 +136,7 @@ def main():
     print('evaluating using the model that has the best loss on the valid set')
     ts = time.time()
     model.load_weights(fname_param)
-    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0], verbose=0)
     print('Train score: %.6f rmse (norm): %.6f  rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_train)), score[2], score[3]))
     score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_test)), score[2], score[3]))
@@ -156,10 +156,10 @@ def main():
     #==== evaluate on the final model ===============================================================================
     print('=' * 10)
     print('evaluating using the final model')
-    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0], verbose=0)
     print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2./ mmn.inverse_transform(np.mean(y_train)), score[2], score[3]))
 
-    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0], verbose=0)
     ts = time.time()
     score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_test)), score[2], score[3]))
