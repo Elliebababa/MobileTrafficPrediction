@@ -23,7 +23,12 @@ from utils import *
 import metrics
 #model
 from kegra import convlstm
+<<<<<<< HEAD
 #from deepst import deepst_model
+=======
+from kegra import gcnmodel
+from deepst import deepst_model
+>>>>>>> a1f5b4fc1ef19e1190b8dbc2c67aa53c39c5a4ec
 
 # define parameters for graph convolution
 
@@ -35,7 +40,7 @@ lr = 0.0002
 look_back = 6 # look back of interval, the same as len_closeness
 
 nb_epoch = 500
-patience = 10  # early stopping patience
+patience = 1  # early stopping patience
 nb_epoch_cont = 100
 batch_size = 1
 
@@ -47,7 +52,7 @@ DATAPATH = './'
 path_cache = os.path.join(DATAPATH,'CACHE')
 
 #model for training
-modelbase = 'deepst'
+modelbase = 'gcnmodel'
 
 if os.path.isdir(path_result) is False:
     os.mkdir(path_result)
@@ -66,6 +71,8 @@ def build_model(modelbase = 'convlstm',input_shape = (6, 1, 900)):
         model = convlstm.fclstm(input_shape)
     if modelbase == 'deepst':
         model = deepst_model.builddeepst()
+    if modelbase == 'gcnmodel':
+        model = gcnmodel.buildmodel(input_shape)
     adam = Adam(lr = lr)
     model.compile(loss = 'mse', optimizer = adam, metrics = [metrics.rmse, metrics.mape, metrics.ma])
     model.summary()
@@ -89,12 +96,20 @@ def main(modelbase):
         X_train, y_train, X_test, y_test, mmn, timestamps_train, timestamps_test = deepst_model.load_data(preprocess_name='preprocessing.pkl')
         #cache(fname, X_train, Y_train, X_test, Y_test, 0, timestamps_train, timestamps_test)
     else:
-        X_train, X_test, y_train, y_test, mmn, A = load_data_1()
+        #convlstm, cnnlstm, fclstm, deepst, gcnlstm
+        X_train, X_test, y_train, y_test, mmn = load_data_1()
         print(" X_train shape : {} \n X_test shape : {} \n y_train shape: {} \n y_test shape : {}".format(np.asarray(X_train).shape, np.asarray(X_test).shape, np.asarray(y_train).shape, np.asarray(y_test).shape))
         X_train = np.asarray(X_train)
         X_test = np.asarray(X_test)
         y_train = np.asarray(y_train)
         y_test = np.asarray(y_test)
+        """   if modelbase == 'gcnmodel':
+                           #A = np.asarray(A)
+                           X_train = np.sum(X_train, axis = 1)
+                           print(X_train.shape)
+                           X_train = [X_train,np.tile(A,(X_train.shape[0],1))]
+                           X_test = [X_test, np.tile(A,(X_test.shape[0],1))]
+                           print('type: ',type(X_train), type(A))"""
 
     #print("\n days (test): ", [v[:8] for v in timestamps_test[0::T]])
     print("\n elapsed time (loading data): %.3f seconds\n" % (time.time() - ts))
@@ -129,7 +144,7 @@ def main(modelbase):
     print('evaluating using the model that has the best loss on the valid set')
     ts = time.time()
     model.load_weights(fname_param)
-    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0], verbose=0)
     print('Train score: %.6f rmse (norm): %.6f  rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_train)), score[2], score[3]))
     score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_test)), score[2], score[3]))
@@ -149,15 +164,15 @@ def main(modelbase):
     #==== evaluate on the final model ===============================================================================
     print('=' * 10)
     print('evaluating using the final model')
-    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0], verbose=0)
     print('Train score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2./ mmn.inverse_transform(np.mean(y_train)), score[2], score[3]))
 
-    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0] // 48, verbose=0)
+    score = model.evaluate(X_train, y_train, batch_size=y_train.shape[0], verbose=0)
     ts = time.time()
     score = model.evaluate(X_test, y_test, batch_size=y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f nrmse : %.6f mape: %.6f ma: %.6f' %(score[0], score[1], score[1] * (mmn._max - mmn._min)/2. , score[1] * (mmn._max - mmn._min)/2. / mmn.inverse_transform(np.mean(y_test)), score[2], score[3]))
     print("\nevaluate final model elapsed time (eval cont): %.3f seconds\n" % (time.time() - ts))
-
+    
 
 if __name__ == '__main__':
     main()
