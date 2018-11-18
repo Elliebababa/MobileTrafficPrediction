@@ -24,7 +24,8 @@ class GraphConvolution(Layer):
 
     def buildbasis(self):
         if self.filter == 'localpool':
-            self.A = np.load('D:\MobileTrafficPrediction\src\models\kegra\wight_matrix_lb_weekly_4070.npy')
+            self.A = np.load('/home/hyf/MobileTrafficPrediction/src/models/kegra/wight_matrix_lb_weekly_4070.npy')
+            #self.A = np.load('wight_matrix_lb_weekly_4070.npy')
             self.A = tf.convert_to_tensor(self.A,dtype = 'float32')
             self.basis.append(self.A)
 
