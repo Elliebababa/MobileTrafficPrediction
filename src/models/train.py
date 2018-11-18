@@ -23,12 +23,10 @@ from utils import *
 import metrics
 #model
 from kegra import convlstm
-<<<<<<< HEAD
 #from deepst import deepst_model
-=======
+
 from kegra import gcnmodel
-from deepst import deepst_model
->>>>>>> a1f5b4fc1ef19e1190b8dbc2c67aa53c39c5a4ec
+
 
 # define parameters for graph convolution
 
