@@ -6,6 +6,7 @@ from keras.engine import Layer
 import keras.backend as K
 import numpy as np
 import tensorflow as tf
+from utils import *
 #FILTER = 'localpool'
 MAX_DEGREE = 2
 
@@ -23,12 +24,20 @@ class GraphConvolution(Layer):
         self.buildbasis()
 
     def buildbasis(self):
+        self.A = np.load('/home/hyf/MobileTrafficPrediction/src/models/kegra/wight_matrix_lb_weekly_4070.npy')
         if self.filter == 'localpool':
-            self.A = np.load('/home/hyf/MobileTrafficPrediction/src/models/kegra/wight_matrix_lb_weekly_4070.npy')
-            self.A[np.where(self.A < 0.9)] = 0
+            self.A = normalize_adj(self.A)
+            #self.A[np.where(self.A < 0.9)] = 0
             #self.A = np.load('wight_matrix_lb_weekly_4070.npy')
             self.A = tf.convert_to_tensor(self.A,dtype = 'float32')
             self.basis.append(self.A)
+        elif self.filter =='chebyshev':
+            print('using chebyshev...')
+            L = normalized_laplacian(self.A)
+            L_scaled = rescale_laplacian(L)
+            T_k = chebyshev_polynomial(L_scaled, MAX_DEGREE)
+            self.support = MAX_DEGREE + 1
+            self.basis = [tf.convert_to_tensor(i,dtype = 'float32') for i in T_k]
 
 
     def compute_output_shape(self, input_shapes):

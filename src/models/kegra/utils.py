@@ -43,7 +43,7 @@ def normalize_adj(adj, symmetric=True):
     else:
         d = sp.diags(np.power(np.array(adj.sum(1)), -1).flatten(), 0)
         a_norm = d.dot(adj).tocsr()
-    return a_norm
+    return a_norm.toarray()
 
 
 def preprocess_adj(adj, symmetric=True):
