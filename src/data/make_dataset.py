@@ -62,11 +62,10 @@ def aggregateGridData(sheetList,  output_filepath ,header = None, index = None):
         ##tt = list(range(1383260400000,1385852400000,600000))#gd.index November interval
         tt = list(range(1385852400000,1388617200000,600000))
         
-        for id, time in enumerate(tt[:-1]):
-            if not tt[id + 1] == time + 600000:
-                for missingInterval in range(time + 600000, tt[id + 1],600000):
-                    logging.warning('warning: missing time interval '+str(missingInterval)+'... and now inserting...')
-                    gd.loc[missingInterval] = [0,0,0,0,0]
+        for timeinter in tt:
+            if timeinter not in gd.index: 
+                logging.warning('warning: missing time interval '+str(timeinter)+'... and now inserting...')
+                gd.loc[timeinter] = [0,0,0,0,0]
 
         gd = gd.sort_index()
         #write csv to file

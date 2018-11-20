@@ -1,5 +1,5 @@
 from __future__ import print_function
-from keras.layers import Input, Dropout, Add
+from keras.layers import Input, Dropout, Add, TimeDistributed, LSTM, Dense
 from keras.models import Model 
 from keras import activations, initializers
 from keras.engine import Layer
@@ -47,7 +47,6 @@ class GraphConvolution(Layer):
     def call(self, inputs):
         print('input : ', inputs )
         features = inputs[0]
-        features = np.sum(features,axis = 0)
         print('features shape : ',features.shape)
         print('basis shape : ',self.basis[0].shape)
         supports = list()
@@ -75,10 +74,12 @@ def buildmodel(input_shape):
     support = 1
     #SHAPE[1] is the channel/ dimension of the data
     print('build model got input shape:',input_shape)
-    #look_back, dimension, nb_nodes = input_shape
     lookback, dimension, nb_nodes = input_shape
     X_in = Input(shape = (lookback, dimension, nb_nodes))
+    wrapped = TimeDistributed(GraphConvolution(nb_nodes, support))(X_in)
     #pass graph convolutional layers as list of tensors
-    Y = GraphConvolution(nb_nodes, support)(X_in)
-    model = Model(inputs = X_in, outputs = Y)
+    #Y = GraphConvolution(nb_nodes, support)(X_in)
+    lstm = LSTM(64)(wrapped)
+    Y = Dense(nb_nodes, activation = 'tanh')(lstm)
+    model = Model(inputs = X_in, outputs = Y, name = 'gcnlstm')
     return model
