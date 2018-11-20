@@ -73,7 +73,7 @@ def build(dataX, meth = 'lb'):
     grids = d.T
     dis_mat = gen_dis_matrix(grids,nb_grid,meth)
     wei_mat = gen_weight_from_dtw(dis_mat)
-    return wei_mat
+    return dis_mat,wei_mat
 
 if __name__ == "__main__":
     gridNum = 5

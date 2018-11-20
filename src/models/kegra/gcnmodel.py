@@ -25,6 +25,7 @@ class GraphConvolution(Layer):
     def buildbasis(self):
         if self.filter == 'localpool':
             self.A = np.load('/home/hyf/MobileTrafficPrediction/src/models/kegra/wight_matrix_lb_weekly_4070.npy')
+            self.A[np.where(self.A < 0.9)] = 0
             #self.A = np.load('wight_matrix_lb_weekly_4070.npy')
             self.A = tf.convert_to_tensor(self.A,dtype = 'float32')
             self.basis.append(self.A)
@@ -76,7 +77,8 @@ def buildmodel(input_shape):
     print('build model got input shape:',input_shape)
     lookback, dimension, nb_nodes = input_shape
     X_in = Input(shape = (lookback, dimension, nb_nodes))
-    wrapped = TimeDistributed(GraphConvolution(nb_nodes, support))(X_in)
+    wrapped = TimeDistributed(GraphConvolution(nb_nodes, support))(X_in)    
+    wrapped = TimeDistributed(GraphConvolution(nb_nodes, support))(wrapped)
     #pass graph convolutional layers as list of tensors
     #Y = GraphConvolution(nb_nodes, support)(X_in)
     lstm = LSTM(64)(wrapped)
